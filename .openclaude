@@ -1,80 +1,108 @@
 # OpenClaude Configuration
 
 ## Project Identity
+
 - **Name**: AI Finance Control
 - **Type**: Goal-Oriented Multi-Agent Finance Planning System
-- **Stack**: Rails 7 + rcrewai + OpenAI GPT-4 + Tailwind CSS
+- **Stack**: Rails 8 + rcrewai + OpenAI GPT-4 + Solid Queue + Tailwind CSS + Devise
 - **Language**: Portuguese (documentation) + English (code)
-- **Status**: In Development (Planning phase complete, Execution phase next)
+- **Status**: In Development (Planning phase ✅ complete, Execution phase 🚧 in progress, Monitoring phase 📋 planned)
 
 ## Core Architecture
+
 Three-phase workflow orchestrated by rcrewai:
 
 ### Phase 1: Planning ✅
+
+- User edits profile (`/profile`) to set monthly income and current savings
 - User creates financial goal (target amount, deadline, priority)
 - `AgentPlanningJob` enqueues automatically (or via manual "Create Plan with AI" button)
-- `AgentPlanningService` calls `PlannerAgent` (rcrewai crew)
-- PlannerAgent analyzes goal, returns structured plan JSON with phases
-- Service converts plan into 1-5 `Milestone` records
-- View displays plan status badge + milestone list
+- `AgentPlanningService` calls `PlannerAgent` with DETAILED prompt requesting:
+  - 1-5 phases with SPECIFIC actions (examples: "Cut subscriptions R$200/mo", "Move R$300 to 5.5% APY account")
+  - Monthly contribution targets, realistic timelines, focus areas
+- PlannerAgent analyzes goal with user context, returns structured plan JSON
+- Service parses phases and extracts rich details:
+  - `description` — What will be accomplished (2-3 sentences)
+  - `key_actions` — 4-6 specific, actionable items
+  - `timeline` — Phase duration (Month X-Y)
+  - `monthly_contribution` — Target savings amount
+  - `focus` — Focus area (e.g., "Foundation Building", "Acceleration")
+- Service creates 1-5 `Milestone` records with details stored in JSON field
+- Views display milestones with full details expanded (not just phase name)
 
-### Phase 2: Execution (In Progress)
-- User clicks "Execute Milestone" on pending milestone
-- `ExecutorAgentJob` enqueues
-- `ExecutorAgentService` calls `ExecutorAgent` (rcrewai crew)
-- ExecutorAgent breaks milestone into actionable steps
-- Steps stored + displayed in view for user execution
-- User marks steps complete manually (future: auto-tracking)
+### Phase 2: Execution 🚧
 
-### Phase 3: Monitoring (Future)
-- `MonitorAgent` tracks milestone progress periodically
-- Sends notifications when milestones reached/failed
-- Provides insights and recommendations
+- User clicks "Execute Milestone" on next pending milestone (sequential locking)
+- `ExecutorAgentJob` enqueues to `executors` queue
+- `ExecutorAgentService` calls `ExecutorAgent` (not yet integrated)
+- ExecutorAgent breaks milestone into 5-8 actionable steps
+- Steps stored + displayed in view
+- User marks steps/milestone complete manually
+
+### Phase 3: Monitoring 📋
+
+- `MonitorAgentJob` runs daily to check goal progress
+- `MonitorAgent` analyzes progress vs. targets, suggests adjustments
+- Sends notifications if milestone falling behind (future)
 
 ## Key Entities
-- **Goal**: `name`, `target_amount`, `target_date`, `priority`, `status`, `plan` (JSONB)
-- **Milestone**: `goal_id`, `phase`, `target_amount`, `order_number`, `status`, `current_amount`, `progress_percentage`
-- **User**: Devise auth, `current_savings`, `monthly_income`
+
+- **Goal**: `name`, `target_amount`, `target_date`, `priority`, `status` (planned/in_progress/completed), `plan` (JSONB with phases)
+- **Milestone**: `goal_id`, `phase`, `target_amount`, `order_number`, `status` (pending/in_progress/completed), `current_amount`, `progress_percentage`, `details` (JSON with description, key_actions[], timeline, monthly_contribution, focus)
+- **User**: Devise auth, `current_savings`, `monthly_income` (for feasibility check)
 - **AgentSession**: Tracks agent execution lifecycle (AASM: idle → processing → completed/failed)
-- **AgentMessage**: Conversation history for auditoria
+- **AgentMessage**: Conversation history for audit trail
 
 ## Routes & Actions
-```
-POST /goals                    # Create goal → trigger AgentPlanningJob
-GET  /goals/:id                # Show goal with milestones + plan
-POST /goals/:id/create_plan    # Manual trigger PlannerAgent
-POST /goals/:id/execute_milestone # Manual trigger ExecutorAgent
 
-POST /financial_goals                    # Create financial goal
-GET  /financial_goals/:id
-POST /financial_goals/:id/create_plan
+```
+GET  /profile                             # View profile (income, savings)
+PATCH /profile                            # Update profile
+
+POST /goals                               # Create goal → trigger AgentPlanningJob
+GET  /goals/:id                           # Show goal with milestones + plan
+PATCH /goals/:id                          # Update goal
+DELETE /goals/:id                         # Delete goal
+POST /goals/:id/create_plan               # Manual trigger PlannerAgent
+POST /goals/:id/execute_milestone         # Trigger ExecutorAgent (sequential)
+POST /goals/:id/complete_milestone        # Mark milestone done
+
+POST /financial_goals                     # Create financial goal
+GET  /financial_goals/:id                 # Show goal with milestones
+POST /financial_goals/:id/create_plan     # Manual trigger PlannerAgent
 ```
 
 ## View Structure
+
 ```
 Goal Detail Header
 ├── Goal name + target date
-├── Plan status badge (✅ or ⏳)
-└── Action buttons (Create Plan, Edit, Delete, Back)
+├── Plan status badge (✅ Plan Created or ⏳ Awaiting Plan)
+└── Action buttons (Create Plan if needed, Edit, Delete, Back)
 
 Current State Section
-├── Your Savings
-├── Monthly Income
+├── Your Savings (R$)
+├── Monthly Income (R$)
 └── Months Until Goal
 
 Goal State Section
 ├── Target Amount
-└── Progress bar (% Complete)
+└── Progress bar with % Complete
 
-Milestones Section
-├── Phase X: [Phase Name]
-├── Status badge
+Milestone Cards (detailed)
+├── Phase #: [Phase Name]
+├── Status badge (pending/in_progress/completed)
 ├── Target Amount + Current Progress
 ├── Progress bar
-└── Execute button (if pending)
+├── What will be accomplished (description)
+├── Key actions (bulleted list)
+├── Monthly contribution (R$)
+├── Timeline (Month X-Y)
+├── Focus area
+└── Execute/Complete button (if eligible)
 
 Detailed Plan Section (if plan exists)
-└── JSON pretty-printed
+└── Full JSON pretty-printed
 ```
 
 ## Development Workflow
@@ -93,30 +121,70 @@ DATABASE_URL            # PostgreSQL connection
 SOLID_QUEUE_*           # Solid Queue job processing config
 ```
 
+## Testing with RSpec
+
+**Run tests**: `bundle exec rspec` or `bundle exec rspec spec/services/agent_planning_service_spec.rb`
+
+**Test files to create**:
+
+1. `spec/services/agent_planning_service_spec.rb` — Test plan creation with milestone details
+2. `spec/controllers/goals_controller_spec.rb` — Test goal CRUD and plan creation
+3. `spec/controllers/profiles_controller_spec.rb` — Test profile edit (income/savings)
+4. `spec/models/goal_spec.rb` — Test feasibility calculations
+5. `spec/models/milestone_spec.rb` — Test milestone states and details
+6. `spec/jobs/agent_planning_job_spec.rb` — Test background job enqueuing
+
+**Test patterns**:
+
+- Use factories: `create(:goal, user: user, target_amount: 10000)`
+- Mock API calls to avoid OpenAI costs
+- Test business logic (services) separately from controllers
+- Verify side effects (database state, job enqueuing, session creation)
+- Test edge cases (achievable vs. challenging goals, zero income, etc.)
+
 ## Testing Focus Areas
-- Goal creation triggers PlannerAgent automatically ✅
-- Milestones created from plan with correct phase names ✅
-- Manual "Create Plan with AI" button works on goals without plans ✅
-- ExecutorAgent triggers on "Execute Milestone" click (in progress)
-- View displays all sections correctly with proper styling
+
+✅ **Done**:
+
+- Goal creation triggers PlannerAgent automatically
+- Milestones created with DETAILED descriptions and specific actions
+- Manual "Create Plan with AI" button works on goals without plans
+- Profile edit updates monthly_income for feasibility check
+- Milestones show detailed information (description, key_actions, timeline)
+- Sequential execution (only next pending milestone executable)
 - Progress bars calculate correctly
+- Views display all sections with proper Discord dark styling
 - Route helpers match Rails conventions
 
+📝 **To test with RSpec**:
+
+- AgentPlanningService creates milestones with all detail fields
+- GoalsController properly enqueues AgentPlanningJob
+- ProfilesController updates user's monthly_income and current_savings
+- Goal#is_achievable? returns correct boolean based on income
+- Milestone#details JSON is parsed and stored correctly
+- Sequential milestone locking prevents out-of-order execution
+- Goal status transitions: planned → in_progress → completed
+
 ## Known Issues & Fixes
-- Route helpers: Use `create_plan_goal_path(@goal)` not `goal_create_plan_path(@goal)`
-- View templates: Restart server after creating new `.html.erb` files
-- Milestones: Divide target evenly across phases
-- Plan JSON: Use `JSON.pretty_generate()` for display
+
+- Route helpers: Use `create_plan_goal_path(@goal)` not `goal_create_plan_path(@goal)` ✅
+- View templates: Restart server after creating new `.html.erb` files ✅
+- Milestones: Details field stores flexible JSON structure ✅
+- Plan JSON: Use `JSON.pretty_generate()` for display ✅
+- RuboCop: Spaces inside array brackets `[ ]`, double quotes for strings ✅
 
 ## Next Steps
-1. Implement ExecutorAgent + ExecutorAgentService
-2. Build Execute Milestone UI/UX flow
-3. Add Notification system (email/push on plan completion)
-4. Implement MonitorAgent
-5. Add Tools to agents (real bank API integration)
-6. Build progress dashboard with charts
-7. Add PDF export for plans
-8. Multi-agent conversations (agents discussing with each other)
+
+1. Add WebSearch and custom tools to agents (investment data, real bank info)
+2. Implement ExecutorAgent integration (currently has empty tools)
+3. Build Execute Milestone action plan flow
+4. Add Notification system (email/push on milestone completion)
+5. Implement MonitorAgent for daily progress checks
+6. Build progress dashboard with charts and trends
+7. Add PDF export for financial plans
+8. Integration with real banking APIs (Stripe, open banking)
+9. Multi-agent conversations (agents discussing recommendations)
 
 ## Documentation References
 - **CLAUDE.md** — Claude Code project context

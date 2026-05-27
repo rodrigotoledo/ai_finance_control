@@ -1,81 +1,120 @@
 # Cursor IDE Rules for AI Finance Control
 
 ## Project Context
-Goal-Oriented Multi-Agent Finance Planning System (Rails + rcrewai + OpenAI GPT-4).
+
+Goal-Oriented Multi-Agent Finance Planning System with three phases:
+1. **Planning** (✅ Done): User creates goal → PlannerAgent generates detailed phases
+2. **Execution** (🚧 WIP): User executes milestones sequentially → ExecutorAgent creates action steps
+3. **Monitoring** (📋 Planned): Daily progress checks and alerts
+
+Tech: Rails 8 + rcrewai + OpenAI GPT-4 + Solid Queue + Tailwind CSS
 
 ## Code Style & Patterns
+
 - **Rails conventions**: RESTful controllers, ActiveRecord models, Tailwind CSS
 - **Naming**: snake_case for methods/files, PascalCase for classes
 - **No comments unless WHY is non-obvious** (hidden constraints, workarounds, subtle invariants)
 - **Prefer explicit over implicit** — trust internal code guarantees, validate only at system boundaries
+- **RuboCop**: Spaces inside array brackets `[ ]`, double quotes for strings
 
 ## File Organization
 ```
 app/
-├── controllers/     # Goals, FinancialGoals, Agent chat
+├── controllers/     # GoalsController, FinancialGoalsController, ProfilesController
 ├── models/          # Goal, Milestone, User, AgentSession, AgentMessage
-├── services/        # AgentPlanningService, ExecutorAgentService, MonitorAgentService
+├── agents/          # PlannerAgent, ExecutorAgent, MonitorAgent
+├── services/        # AgentPlanningService, ExecutorAgentService
 ├── jobs/            # AgentPlanningJob, ExecutorAgentJob
-├── views/           # goals, financial_goals, agent (chat interface)
-├── assets/          # Tailwind CSS, Stimulus controllers
-└── lib/             # rcrewai agent definitions
-
-db/
-├── migrations/      # Schema changes with timestamps
-└── seeds.rb         # Dev data
-
-docs/
-├── architecture.md  # System design
-├── agents.md        # Agent documentation
-├── rcrewai.md       # rcrewai integration guide
-└── setup.md         # Setup instructions
+└── views/           # goals, financial_goals, profiles (with detailed milestone cards)
 
 config/
-├── routes.rb        # RESTful routes with member actions (create_plan, execute_milestone)
-├── initializers/    # Devise, Solid Queue config
-└── database.yml     # DB credentials (use .env)
+├── routes.rb        # resource :profile + resources :goals with member actions
+└── solid_queue.yml  # Background job queues (default, executors)
 ```
 
-## Key Patterns
-1. **Goals without plans** → Show "⏳ Awaiting Plan" badge + "Create Plan with AI" button
-2. **Goals with plans** → Show "✅ Plan Created" badge + List milestones with Execute buttons
-3. **Async jobs** → Use Solid Queue, enqueue after model save or on user action
-4. **View updates** → Manual refresh (no Turbo) or check milestone count badge
-5. **Error handling** → Validate at boundaries (user input, API responses); trust internal code
+## Key Workflows
+
+### Profile Setup
+- User → `/profile` → Edit monthly_income and current_savings
+- Used for goal feasibility calculation ("achievable" vs "challenging")
+
+### Goal Planning
+1. User creates goal (name, target amount, target date, priority)
+2. AgentPlanningJob enqueues automatically
+3. PlannerAgent analyzes with detailed prompt requesting:
+   - 1-5 phases with SPECIFIC actions (not generic "track progress")
+   - Real examples: "Cut subscriptions R$200/mo", "Move R$300 to 5.5% APY account"
+   - Monthly contribution targets, timeline, focus area
+4. Service parses JSON response and creates Milestones with rich `details` field
+5. Views display: description, key_actions (bulleted), timeline, monthly_contribution, focus
+
+### Milestone Execution
+1. Only next pending milestone is executable (sequential locking)
+2. Click "Execute Milestone" → ExecutorAgentJob enqueues
+3. ExecutorAgent creates action steps (not yet integrated)
+4. Complete milestone → Mark done → Unlock next phase
 
 ## Styling
 - **Framework**: Tailwind CSS (via importmap, no build step)
-- **Theme**: Discord dark mode (zinc-900, zinc-700, indigo-600, emerald-600)
-- **Components**: Stimulus components for form interactions
-- **Layout**: Responsive (mobile-first with `md:` and `lg:` breakpoints)
+- **Theme**: Discord dark (zinc-900, zinc-700, indigo-600, emerald-500)
+- **Components**: Stimulus for interactivity (no Turbo real-time)
+- **Layout**: Responsive mobile-first with `md:` and `lg:` breakpoints
+- **Milestone cards**: Show phase name, description, key actions list, metrics, focus area
 
-## rcrewai Usage
+## rcrewai Patterns
 - **Import**: `require 'rcrewai'`
-- **Agents**: `RCrewAI::Agent` with name, role, goal, tools
-- **Tasks**: `RCrewAI::Task` with description, expected_output, agent
-- **Crews**: `RCrewAI::Crew` orchestrates agents + tasks
-- **LLM**: OpenAI GPT-4 (configured via `OPENAI_API_KEY` env var)
-- **Output**: JSON structured responses (plan with phases, action items, etc.)
+- **Agents**: Inherit from `RCrewAI::Agent` with name, role, goal, backstory, tools
+- **Tasks**: `RCrewAI::Task` with detailed description requesting specific structured JSON
+- **Crews**: Orchestrate agents + tasks together
+- **LLM**: OpenAI GPT-4 (via `OPENAI_API_KEY` env var)
+- **JSON responses**: Parse `results` from crew.execute, extract phase/action details
+- **Tools**: Currently empty `tools: []` — candidate for WebSearch, custom tools
+
+## Database & Milestones
+- **Goals**: `name, target_amount, target_date, priority, status, plan` (JSONB with phases array)
+- **Milestones**: `goal_id, phase, target_amount, order_number, status, current_amount, details` (JSON)
+  - **details** = `{ description, key_actions[], timeline, monthly_contribution, focus }`
+- **Users**: `email, monthly_income, current_savings`
+- Milestone details stored as JSON for flexibility (no schema migration needed for changes)
 
 ## Testing & Debugging
-- **Rails console**: `rails c` to test models/services
-- **Server**: `rails s` runs on localhost:3000
-- **Logs**: Check `log/development.log` for job execution
-- **Devise**: Authenticate with `current_user` in controllers
-- **Solid Queue**: Jobs enqueue async; check job status in view via milestone presence
+- **Rails console**: `rails c` to test services
+- **Server**: `rails s` on localhost:3000
+- **Logs**: Check `log/development.log` for job execution details
+- **Solid Queue**: Background jobs enqueue async; view status via milestone creation
+- **Views**: Manually refresh or check milestone count badge for plan status
+- **Agent output**: Check AgentSession records for agent JSON responses
 
 ## Do NOT
+
 - Add comments unless WHY is non-obvious
-- Create abstraction layers prematurely (three similar lines OK before extracting)
+- Create abstraction layers prematurely (3 similar lines OK before extracting)
 - Add error handling for impossible scenarios
 - Use feature flags or backwards-compatibility shims
-- Commit without testing the golden path in browser
-- Force-push or revert without confirmation
+- Generic agent prompts (be SPECIFIC with examples)
+- Sync job calls (use perform_later not perform_now)
+
+## Testing with RSpec
+
+All new code must have test coverage:
+- **Models**: Test validations, associations, methods
+- **Services**: Test business logic, side effects
+- **Controllers**: Test actions, authorization, redirects
+- **Jobs**: Test enqueuing, error handling
+- **Agents**: Test crew orchestration, task descriptions
+
+Run tests: `bundle exec rspec` or `bundle exec rspec spec/path/to/spec.rb`
+
+Use factories (`create(:goal)`) not fixtures. Mock external API calls.
 
 ## Do
+
 - Restart Rails server after creating new view templates
 - Test feature in browser (mobile + desktop) before marking complete
-- Use `number_with_precision()` for currency formatting
-- Use `JSON.pretty_generate()` to display plan JSONB in views
-- Link route helpers correctly: `create_plan_goal_path(@goal)` not `goal_create_plan_path`
-- Break complex logic into services; keep controllers thin
+- Write RSpec tests for all new code (services, controllers, jobs, models)
+- Use `number_with_precision()` for currency
+- Use `JSON.pretty_generate()` to display JSONB in views
+- Route helpers: `create_plan_goal_path(@goal)` not `goal_create_plan_path`
+- Detailed, specific agent prompts with user context
+- Graceful view degradation if details are missing
+- Sequential milestone execution (lock out-of-order)

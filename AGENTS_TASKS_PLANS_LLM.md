@@ -9,6 +9,12 @@ This project can be extended to support multiple LLM providers and agent framewo
 - **Strengths:** Long context, safe outputs, good for reasoning
 - **Example:**
   - `ClaudeAgent` can be used as a drop-in for PlannerAgent or ExecutorAgent
+- **RSpec Requirement:**
+  - All agents, tasks, and plans using Claude **must include RSpec tests**:
+    - Unit tests (spec/unit/)
+    - Request tests (spec/requests/)
+    - Job tests (spec/jobs/)
+  - No code is accepted without full test coverage for each LLM integration.
 
 ## Cursor
 - **Provider:** Cursor (AI code assistant)
@@ -17,6 +23,12 @@ This project can be extended to support multiple LLM providers and agent framewo
 - **Strengths:** Fast code suggestions, context-aware
 - **Example:**
   - `CursorAgent` can be used for codebase refactoring tasks
+- **RSpec Requirement:**
+  - All agents, tasks, and plans using Cursor **must include RSpec tests**:
+    - Unit tests (spec/unit/)
+    - Request tests (spec/requests/)
+    - Job tests (spec/jobs/)
+  - No code is accepted without full test coverage for each LLM integration.
 
 ## Antigravity
 - **Provider:** Hypothetical/Custom LLM
@@ -25,6 +37,12 @@ This project can be extended to support multiple LLM providers and agent framewo
 - **Strengths:** Creative, non-traditional solutions
 - **Example:**
   - `AntigravityAgent` for brainstorming unconventional savings plans
+- **RSpec Requirement:**
+  - All agents, tasks, and plans using Antigravity **must include RSpec tests**:
+    - Unit tests (spec/unit/)
+    - Request tests (spec/requests/)
+    - Job tests (spec/jobs/)
+  - No code is accepted without full test coverage for each LLM integration.
 
 ## GPT (OpenAI)
 - **Provider:** OpenAI
@@ -33,6 +51,12 @@ This project can be extended to support multiple LLM providers and agent framewo
 - **Strengths:** High accuracy, reliable, widely supported
 - **Example:**
   - `PlannerAgent` and `ExecutorAgent` use GPT-4 by default
+- **RSpec Requirement:**
+  - All agents, tasks, and plans using GPT **must include RSpec tests**:
+    - Unit tests (spec/unit/)
+    - Request tests (spec/requests/)
+    - Job tests (spec/jobs/)
+  - No code is accepted without full test coverage for each LLM integration.
 
 ## OMC (Open Model Context)
 - **Provider:** Open Model Context (open-source LLM orchestration)
@@ -41,6 +65,12 @@ This project can be extended to support multiple LLM providers and agent framewo
 - **Strengths:** Customizable, privacy, cost-effective
 - **Example:**
   - `OMCAgent` for on-premise or private deployments
+- **RSpec Requirement:**
+  - All agents, tasks, and plans using OMC **must include RSpec tests**:
+    - Unit tests (spec/unit/)
+    - Request tests (spec/requests/)
+    - Job tests (spec/jobs/)
+  - No code is accepted without full test coverage for each LLM integration.
 
 ---
 
