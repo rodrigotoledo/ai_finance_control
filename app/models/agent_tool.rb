@@ -1,0 +1,2 @@
+class AgentTool < ApplicationRecord
+end

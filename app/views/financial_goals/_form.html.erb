@@ -1,0 +1,44 @@
+<div class="mx-auto max-w-[600px] p-4 md:p-8">
+  <%= form_with model: financial_goal, local: true, class: "rounded-lg bg-zinc-900 p-6 md:p-8" do |form| %>
+    <% if financial_goal.errors.any? %>
+      <div class="mb-6 rounded border-l-4 border-rose-500 bg-rose-500/20 p-4 text-rose-300">
+        <h2 class="mb-2 font-semibold"><%= pluralize(financial_goal.errors.count, "error") %> prohibited this goal from being saved:</h2>
+        <ul class="list-disc pl-6">
+          <% financial_goal.errors.full_messages.each do |message| %>
+            <li class="mb-1"><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="mb-5">
+      <%= form.label :name, "Goal Name", class: "mb-2 block text-sm font-semibold text-zinc-400" %>
+      <%= form.text_field :name, placeholder: "e.g., Buy a Car", class: "w-full rounded border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-200 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" %>
+    </div>
+
+    <div class="mb-5">
+      <%= form.label :target_amount, "Target Amount (R$)", class: "mb-2 block text-sm font-semibold text-zinc-400" %>
+      <%= form.number_field :target_amount, placeholder: "100000.00", step: 0.01, class: "w-full rounded border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-200 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" %>
+    </div>
+
+    <div class="mb-5">
+      <%= form.label :target_date, "Target Date", class: "mb-2 block text-sm font-semibold text-zinc-400" %>
+      <%= form.datetime_field :target_date, class: "w-full rounded border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-200 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" %>
+    </div>
+
+    <div class="mb-5">
+      <%= form.label :priority, "Priority", class: "mb-2 block text-sm font-semibold text-zinc-400" %>
+      <%= form.number_field :priority, class: "w-full rounded border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-200 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30", min: 1, max: 5 %>
+    </div>
+
+    <div class="mb-5">
+      <%= form.label :status, "Status", class: "mb-2 block text-sm font-semibold text-zinc-400" %>
+      <%= form.select :status, ["planned", "in_progress", "completed"], { prompt: "Select status" }, class: "w-full rounded border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-200 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30" %>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-end gap-2">
+      <%= form.submit class: "inline-flex cursor-pointer items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500" %>
+      <%= link_to "Cancel", financial_goals_path, class: "inline-flex items-center justify-center rounded bg-zinc-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-600" %>
+    </div>
+  <% end %>
+</div>

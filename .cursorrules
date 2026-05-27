@@ -1,0 +1,81 @@
+# Cursor IDE Rules for AI Finance Control
+
+## Project Context
+Goal-Oriented Multi-Agent Finance Planning System (Rails + rcrewai + OpenAI GPT-4).
+
+## Code Style & Patterns
+- **Rails conventions**: RESTful controllers, ActiveRecord models, Tailwind CSS
+- **Naming**: snake_case for methods/files, PascalCase for classes
+- **No comments unless WHY is non-obvious** (hidden constraints, workarounds, subtle invariants)
+- **Prefer explicit over implicit** — trust internal code guarantees, validate only at system boundaries
+
+## File Organization
+```
+app/
+├── controllers/     # Goals, FinancialGoals, Agent chat
+├── models/          # Goal, Milestone, User, AgentSession, AgentMessage
+├── services/        # AgentPlanningService, ExecutorAgentService, MonitorAgentService
+├── jobs/            # AgentPlanningJob, ExecutorAgentJob
+├── views/           # goals, financial_goals, agent (chat interface)
+├── assets/          # Tailwind CSS, Stimulus controllers
+└── lib/             # rcrewai agent definitions
+
+db/
+├── migrations/      # Schema changes with timestamps
+└── seeds.rb         # Dev data
+
+docs/
+├── architecture.md  # System design
+├── agents.md        # Agent documentation
+├── rcrewai.md       # rcrewai integration guide
+└── setup.md         # Setup instructions
+
+config/
+├── routes.rb        # RESTful routes with member actions (create_plan, execute_milestone)
+├── initializers/    # Devise, Solid Queue config
+└── database.yml     # DB credentials (use .env)
+```
+
+## Key Patterns
+1. **Goals without plans** → Show "⏳ Awaiting Plan" badge + "Create Plan with AI" button
+2. **Goals with plans** → Show "✅ Plan Created" badge + List milestones with Execute buttons
+3. **Async jobs** → Use Solid Queue, enqueue after model save or on user action
+4. **View updates** → Manual refresh (no Turbo) or check milestone count badge
+5. **Error handling** → Validate at boundaries (user input, API responses); trust internal code
+
+## Styling
+- **Framework**: Tailwind CSS (via importmap, no build step)
+- **Theme**: Discord dark mode (zinc-900, zinc-700, indigo-600, emerald-600)
+- **Components**: Stimulus components for form interactions
+- **Layout**: Responsive (mobile-first with `md:` and `lg:` breakpoints)
+
+## rcrewai Usage
+- **Import**: `require 'rcrewai'`
+- **Agents**: `RCrewAI::Agent` with name, role, goal, tools
+- **Tasks**: `RCrewAI::Task` with description, expected_output, agent
+- **Crews**: `RCrewAI::Crew` orchestrates agents + tasks
+- **LLM**: OpenAI GPT-4 (configured via `OPENAI_API_KEY` env var)
+- **Output**: JSON structured responses (plan with phases, action items, etc.)
+
+## Testing & Debugging
+- **Rails console**: `rails c` to test models/services
+- **Server**: `rails s` runs on localhost:3000
+- **Logs**: Check `log/development.log` for job execution
+- **Devise**: Authenticate with `current_user` in controllers
+- **Solid Queue**: Jobs enqueue async; check job status in view via milestone presence
+
+## Do NOT
+- Add comments unless WHY is non-obvious
+- Create abstraction layers prematurely (three similar lines OK before extracting)
+- Add error handling for impossible scenarios
+- Use feature flags or backwards-compatibility shims
+- Commit without testing the golden path in browser
+- Force-push or revert without confirmation
+
+## Do
+- Restart Rails server after creating new view templates
+- Test feature in browser (mobile + desktop) before marking complete
+- Use `number_with_precision()` for currency formatting
+- Use `JSON.pretty_generate()` to display plan JSONB in views
+- Link route helpers correctly: `create_plan_goal_path(@goal)` not `goal_create_plan_path`
+- Break complex logic into services; keep controllers thin

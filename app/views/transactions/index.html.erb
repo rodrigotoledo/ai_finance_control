@@ -1,0 +1,45 @@
+<div class="mx-auto max-w-[1200px] p-4 md:p-8">
+  <div class="mb-8 flex flex-col gap-4 border-b-2 border-zinc-700 pb-4 md:flex-row md:items-center md:justify-between">
+    <h1 class="text-3xl font-bold text-white">Transactions</h1>
+    <%= link_to "New Transaction", new_transaction_path, class: "inline-flex items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500" %>
+  </div>
+
+  <% if @transactions.any? %>
+    <div class="overflow-hidden rounded-lg bg-zinc-900">
+      <div class="hidden gap-4 border-b border-zinc-700 bg-zinc-950 px-6 py-4 text-sm font-semibold uppercase text-zinc-400 md:grid md:grid-cols-[120px_1fr_120px_120px_150px]">
+        <div>Date</div>
+        <div>Description</div>
+        <div>Category</div>
+        <div class="text-right">Amount</div>
+        <div class="text-right">Actions</div>
+      </div>
+
+      <% @transactions.each do |transaction| %>
+        <div class="grid gap-4 border-b border-zinc-700 px-6 py-4 transition last:border-b-0 hover:bg-zinc-800 md:grid-cols-[120px_1fr_120px_120px_150px] md:items-center">
+          <div class="text-sm text-zinc-400">
+            <%= transaction.date&.strftime("%b %d, %Y") || "N/A" %>
+          </div>
+          <div>
+            <%= link_to transaction.description, transaction_path(transaction), class: "font-semibold text-indigo-400 hover:underline" %>
+          </div>
+          <div>
+            <span class="inline-flex items-center whitespace-nowrap rounded bg-zinc-700 px-3 py-1 text-xs font-semibold uppercase text-zinc-300"><%= transaction.category %></span>
+          </div>
+          <div class="md:text-right">
+            <span class="text-sm font-bold <%= transaction.amount.negative? ? 'text-rose-300' : 'text-emerald-300' %>">
+              <%= number_with_precision(transaction.amount.abs, precision: 2) %>
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 md:justify-end">
+            <%= link_to "Edit", edit_transaction_path(transaction), class: "inline-flex items-center justify-center rounded bg-zinc-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-zinc-600" %>
+            <%= button_to "Delete", transaction_path(transaction), method: :delete, data: { confirm: "Sure?" }, class: "inline-flex cursor-pointer items-center justify-center rounded bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-600 hover:text-white" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="rounded-lg bg-zinc-900 px-6 py-12 text-center text-zinc-400">
+      <p>No transactions yet. <%= link_to "Create one", new_transaction_path, class: "font-semibold text-indigo-400 hover:underline" %></p>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,61 @@
+<%# app/views/agent/chat.html.erb %>
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+    
+    <%# Header %>
+    <div class="bg-indigo-600 px-6 py-4">
+      <h1 class="text-xl font-bold text-white">Agente Financeiro</h1>
+      <p class="text-indigo-200 text-sm">Planejamento de aposentadoria e finanças</p>
+    </div>
+    
+    <%# Messages area %>
+    <div id="messages" class="h-96 overflow-y-auto p-6 space-y-4">
+      <% if @active_session.messages.empty? %>
+        <div class="text-center text-gray-500 py-8">
+          <p>Olá! 👋</p>
+          <p>Pergunte-me sobre:</p>
+          <ul class="mt-4 space-y-2">
+            <li>• "Quanto preciso economizar para me aposentar aos 60?"</li>
+            <li>• "Com R$500/mês, quanto terei em 20 anos?"</li>
+            <li>• "Preciso juntar R$100k em 5 anos"</li>
+          </ul>
+        </div>
+      <% else %>
+        <%= render partial: 'messages', locals: { messages: @active_session.messages } %>
+      <% end %>
+    </div>
+    
+    <%# Input area %>
+    <div class="border-t p-4">
+      <%= form_tag agent_ask_path, method: :post, class: "flex gap-2", 
+                   remote: true, data: { turbo: false } do %>
+        <%= hidden_field_tag :session_id, @active_session.id %>
+        <%= text_field_tag :message, nil, 
+            placeholder: "Digite sua pergunta...",
+            class: "flex-1 rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500",
+            required: true %>
+        <%= submit_tag "Enviar", 
+            class: "bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700" %>
+      <% end %>
+    </div>
+    
+  </div>
+</div>
+
+<script>
+  // Auto-scroll para última mensagem
+  const messagesDiv = document.getElementById('messages');
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  
+  // Refresh automático (a cada 3 segundos para ver respostas)
+  function checkForUpdates() {
+    const sessionId = '<%= @active_session.id %>';
+    fetch(`/agent/session_messages?id=${sessionId}`)
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('messages').innerHTML = html;
+      });
+  }
+  
+  setInterval(checkForUpdates, 3000);
+</script>

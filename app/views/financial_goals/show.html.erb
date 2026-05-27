@@ -1,0 +1,157 @@
+<div class="mx-auto max-w-[1000px] p-4 md:p-8">
+  <div class="mb-8 flex flex-col gap-4 border-b-2 border-zinc-700 pb-6 md:flex-row md:items-start md:justify-between">
+    <div>
+      <h1 class="text-4xl font-bold text-white"><%= @goal.name %></h1>
+      <p class="mt-2 text-zinc-400"><%= @goal.target_date.strftime("%B %d, %Y") %></p>
+      <% if @goal.plan.present? %>
+        <span class="mt-2 inline-flex items-center whitespace-nowrap rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold uppercase text-white">Plan Created</span>
+      <% else %>
+        <span class="mt-2 inline-flex items-center whitespace-nowrap rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold uppercase text-white">Awaiting Plan</span>
+      <% end %>
+    </div>
+    <div class="flex flex-wrap items-center justify-end gap-2">
+      <% if @goal.plan.blank? %>
+        <%= button_to "Create Plan with AI", create_plan_financial_goal_path(@goal), method: :post, class: "inline-flex cursor-pointer items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500" %>
+      <% end %>
+      <%= link_to "Edit", edit_financial_goal_path(@goal), class: "inline-flex items-center justify-center rounded bg-zinc-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-600" %>
+      <%= link_to "Back to Goals", financial_goals_path, class: "inline-flex items-center justify-center rounded bg-zinc-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-600" %>
+      <%= button_to "Delete", financial_goal_path(@goal), method: :delete, data: { confirm: "Are you sure?" }, class: "inline-flex cursor-pointer items-center justify-center rounded bg-rose-500/20 px-4 py-2 text-sm font-semibold text-rose-300 transition-colors hover:bg-rose-600 hover:text-white" %>
+    </div>
+  </div>
+
+  <section class="mb-6 rounded-lg bg-zinc-900 p-6">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-700 pb-3">
+      <h2 class="font-semibold text-white">Goal Details</h2>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div class="flex flex-col gap-3 rounded-lg bg-zinc-900 p-6">
+        <span class="text-sm text-zinc-400">Target Amount</span>
+        <span class="font-semibold text-white">R$ <%= number_with_precision(@goal.target_amount, precision: 2) %></span>
+      </div>
+
+      <div class="flex flex-col gap-3 rounded-lg bg-zinc-900 p-6">
+        <span class="text-sm text-zinc-400">Deadline</span>
+        <span class="font-semibold text-white"><%= @goal.target_date.strftime("%B %d, %Y") %></span>
+      </div>
+
+      <div class="flex flex-col gap-3 rounded-lg bg-zinc-900 p-6">
+        <span class="text-sm text-zinc-400">Priority</span>
+        <span class="font-semibold text-white"><%= @goal.priority %>/5</span>
+      </div>
+
+      <div class="flex flex-col gap-3 rounded-lg bg-zinc-900 p-6">
+        <span class="text-sm text-zinc-400">Status</span>
+        <span class="inline-flex w-fit items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold uppercase text-white <%= @goal.status == 'completed' ? 'bg-emerald-600' : @goal.status == 'in_progress' ? 'bg-rose-600' : 'bg-indigo-600' %>">
+          <%= @goal.status&.capitalize || 'Planned' %>
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-3 rounded-lg bg-zinc-900 p-6">
+        <span class="text-sm text-zinc-400">Months Until Target</span>
+        <span class="font-semibold text-white"><%= @goal.months_remaining %></span>
+      </div>
+
+      <div class="flex flex-col gap-3 rounded-lg bg-zinc-900 p-6">
+        <span class="text-sm text-zinc-400">Monthly Need</span>
+        <span class="font-semibold text-white">R$ <%= number_with_precision(@goal.calculate_monthly_need, precision: 2) %></span>
+      </div>
+    </div>
+
+    <% if @goal.is_achievable? %>
+      <div class="mt-5 rounded bg-emerald-500/20 px-4 py-3 font-semibold text-emerald-300">This goal is achievable with your current income</div>
+    <% else %>
+      <div class="mt-5 rounded bg-rose-500/20 px-4 py-3 font-semibold text-rose-300">This goal may be challenging with your current income</div>
+    <% end %>
+  </section>
+
+  <% if @milestones.any? %>
+    <section class="mb-6 rounded-lg bg-zinc-900 p-6">
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-700 pb-3">
+        <h2 class="font-semibold text-white">Milestones</h2>
+      </div>
+
+      <div class="space-y-4">
+        <% @milestones.each do |milestone| %>
+          <div class="rounded-lg border border-zinc-700 bg-zinc-900 p-5">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-700 pb-3">
+              <span class="text-sm text-zinc-400">Phase <%= milestone.order_number %></span>
+              <h3 class="font-semibold text-white"><%= milestone.phase %></h3>
+              <span class="inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold uppercase text-white <%= milestone.status == 'completed' ? 'bg-emerald-600' : milestone.status == 'in_progress' ? 'bg-rose-600' : 'bg-indigo-600' %>">
+                <%= (milestone.status || 'pending').capitalize %>
+              </span>
+            </div>
+
+            <div class="grid gap-5 md:grid-cols-[1fr_220px]">
+              <div class="flex items-center justify-between gap-4 py-3">
+                <span class="text-sm text-zinc-400">Target</span>
+                <span class="font-semibold text-white">R$ <%= number_with_precision(milestone.target_amount, precision: 2) %></span>
+              </div>
+              <div class="space-y-2">
+                <div class="h-3 overflow-hidden rounded-full bg-zinc-700">
+                  <div class="h-full rounded-full bg-emerald-500 transition-all" style="width: <%= milestone.progress_percentage %>%"></div>
+                </div>
+                <span class="text-sm font-semibold text-zinc-400"><%= milestone.completion_percentage %></span>
+              </div>
+            </div>
+
+            <% if milestone.details.present? %>
+              <div class="mt-5 space-y-4 border-t border-zinc-700 pt-5">
+                <% if milestone.details["description"].present? %>
+                  <div>
+                    <span class="block text-sm text-zinc-400">What will be accomplished</span>
+                    <p class="mt-1 text-sm text-zinc-300"><%= milestone.details["description"] %></p>
+                  </div>
+                <% end %>
+                <% if milestone.details["key_actions"].present? && milestone.details["key_actions"].any? %>
+                  <div>
+                    <span class="block text-sm text-zinc-400">Key actions</span>
+                    <ul class="mt-2 space-y-1">
+                      <% milestone.details["key_actions"].each do |action| %>
+                        <li class="flex items-start gap-2 text-sm text-zinc-300">
+                          <span class="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-indigo-400 flex-shrink-0"></span>
+                          <span><%= action %></span>
+                        </li>
+                      <% end %>
+                    </ul>
+                  </div>
+                <% end %>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <% if milestone.details["monthly_contribution"].present? %>
+                    <div class="rounded border border-zinc-700 bg-zinc-800 p-3">
+                      <span class="block text-xs text-zinc-400">Monthly contribution</span>
+                      <span class="font-semibold text-white">R$ <%= number_with_precision(milestone.details["monthly_contribution"], precision: 2) %></span>
+                    </div>
+                  <% end %>
+                  <% if milestone.details["timeline"].present? %>
+                    <div class="rounded border border-zinc-700 bg-zinc-800 p-3">
+                      <span class="block text-xs text-zinc-400">Timeline</span>
+                      <span class="font-semibold text-white"><%= milestone.details["timeline"] %></span>
+                    </div>
+                  <% end %>
+                  <% if milestone.details["focus"].present? %>
+                    <div class="rounded border border-zinc-700 bg-zinc-800 p-3">
+                      <span class="block text-xs text-zinc-400">Focus area</span>
+                      <span class="font-semibold text-white"><%= milestone.details["focus"] %></span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <% if @goal.plan.present? %>
+    <section class="mb-6 rounded-lg bg-zinc-900 p-6">
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-700 pb-3">
+        <h2 class="font-semibold text-white">Detailed Plan</h2>
+      </div>
+      <div class="overflow-x-auto rounded-lg border border-zinc-700 bg-zinc-900 p-5">
+        <pre class="whitespace-pre-wrap text-sm text-zinc-200"><%= JSON.pretty_generate(@goal.plan) %></pre>
+      </div>
+    </section>
+  <% end %>
+</div>

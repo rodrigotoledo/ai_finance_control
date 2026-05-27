@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Ai Finance Control" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Ai Finance Control">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="min-h-screen bg-zinc-800 font-sans text-[15px] leading-normal text-zinc-200">
+    <div class="flex min-h-screen flex-col">
+      <nav class="sticky top-0 z-50 border-b border-zinc-900 bg-zinc-900/80 backdrop-blur">
+        <div class="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-8">
+          <div class="flex items-center">
+            <%= link_to "AI Finance Control", goals_path, class: "text-xl font-bold text-white transition-colors hover:text-indigo-400" %>
+          </div>
+          <div class="flex flex-1 flex-col gap-4 md:ml-12 md:flex-row md:items-center md:justify-between md:gap-8">
+            <% if user_signed_in? %>
+              <ul class="flex flex-wrap gap-4 md:gap-8">
+                <li><%= link_to "Goals", goals_path, class: "font-medium text-zinc-400 transition-colors hover:text-white" %></li>
+                <li><%= link_to "Transactions", transactions_path, class: "font-medium text-zinc-400 transition-colors hover:text-white" %></li>
+                <li><%= link_to "Chat", agent_chat_path, class: "font-medium text-zinc-400 transition-colors hover:text-white" %></li>
+              </ul>
+              <div class="flex flex-wrap items-center gap-3 md:ml-auto">
+                <%= link_to "Profile", profile_path, class: "font-medium text-zinc-400 transition-colors hover:text-white" %>
+                <span class="text-sm text-zinc-400"><%= current_user.email %></span>
+                <%= button_to "Sign Out", destroy_user_session_path, method: :delete, class: "inline-flex cursor-pointer items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500" %>
+              </div>
+            <% else %>
+              <div class="flex flex-wrap gap-4 md:ml-auto md:gap-8">
+                <%= link_to "Sign In", new_user_session_path, class: "font-medium text-zinc-400 transition-colors hover:text-white" %>
+                <%= link_to "Sign Up", new_user_registration_path, class: "font-medium text-zinc-400 transition-colors hover:text-white" %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </nav>
+
+      <main class="flex-1 overflow-y-auto bg-zinc-800">
+        <% if notice %>
+          <div class="mx-4 my-4 max-w-[1400px] rounded border-l-4 border-emerald-500 bg-emerald-500/20 px-6 py-4 text-emerald-300 md:mx-8"><%= notice %></div>
+        <% end %>
+        <% if alert %>
+          <div class="mx-4 my-4 max-w-[1400px] rounded border-l-4 border-rose-500 bg-rose-500/20 px-6 py-4 text-rose-300 md:mx-8"><%= alert %></div>
+        <% end %>
+        <%= yield %>
+      </main>
+    </div>
+  </body>
+</html>

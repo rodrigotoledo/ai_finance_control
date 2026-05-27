@@ -1,0 +1,44 @@
+<div class="mx-auto max-w-2xl p-4 md:p-8">
+  <div class="mb-8 flex items-center justify-between border-b-2 border-zinc-700 pb-6">
+    <h1 class="text-4xl font-bold text-white">Edit Profile</h1>
+    <%= link_to "Cancel", profile_path, class: "inline-flex items-center justify-center rounded bg-zinc-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-600" %>
+  </div>
+
+  <section class="rounded-lg bg-zinc-900 p-6">
+    <%= form_with(model: @user, url: profile_path, method: :patch, local: true) do |form| %>
+      <% if @user.errors.any? %>
+        <div class="mb-6 rounded-lg border border-rose-700 bg-rose-500/10 p-4">
+          <h2 class="mb-3 font-semibold text-rose-300"><%= pluralize(@user.errors.count, "error") %> prohibited this user from being saved:</h2>
+          <ul class="space-y-1 text-sm text-rose-300">
+            <% @user.errors.full_messages.each do |message| %>
+              <li>• <%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-semibold text-white"><%= form.label :monthly_income, "Monthly Income (R$)" %></label>
+          <div class="mt-2">
+            <%= form.number_field :monthly_income, step: 0.01, class: "w-full rounded border border-zinc-600 bg-zinc-800 px-4 py-2 text-white placeholder-zinc-500 transition-colors hover:border-zinc-500 focus:border-indigo-500 focus:outline-none" %>
+          </div>
+          <p class="mt-1 text-xs text-zinc-400">Your estimated monthly income. Used to assess if goals are achievable.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-white"><%= form.label :current_savings, "Current Savings (R$)" %></label>
+          <div class="mt-2">
+            <%= form.number_field :current_savings, step: 0.01, class: "w-full rounded border border-zinc-600 bg-zinc-800 px-4 py-2 text-white placeholder-zinc-500 transition-colors hover:border-zinc-500 focus:border-indigo-500 focus:outline-none" %>
+          </div>
+          <p class="mt-1 text-xs text-zinc-400">Your starting capital for goal planning.</p>
+        </div>
+
+        <div class="flex gap-3 border-t border-zinc-700 pt-6">
+          <%= form.submit "Save Changes", class: "inline-flex items-center justify-center rounded bg-indigo-600 px-6 py-2 font-semibold text-white transition-colors hover:bg-indigo-500" %>
+          <%= link_to "Cancel", profile_path, class: "inline-flex items-center justify-center rounded bg-zinc-700 px-6 py-2 font-semibold text-white transition-colors hover:bg-zinc-600" %>
+        </div>
+      </div>
+    <% end %>
+  </section>
+</div>

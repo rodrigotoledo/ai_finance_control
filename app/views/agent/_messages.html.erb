@@ -1,0 +1,27 @@
+<%# app/views/agent/_messages.html.erb %>
+<% messages.each do |msg| %>
+  <div class="flex <%= msg.role == 'user' ? 'justify-end' : 'justify-start' %>">
+    <div class="max-w-[70%] <%= 
+      msg.role == 'user' ? 'bg-indigo-600 text-white' : 
+      msg.role == 'system' ? 'bg-gray-100 text-gray-600 text-sm' :
+      'bg-gray-100 text-gray-800'
+    %> rounded-lg px-4 py-2">
+      
+      <% if msg.role == 'assistant' %>
+        <div class="font-medium text-indigo-600 text-xs mb-1">Assistente Financeiro</div>
+      <% elsif msg.role == 'user' %>
+        <div class="font-medium text-indigo-200 text-xs mb-1">Você</div>
+      <% elsif msg.role == 'tool' %>
+        <div class="font-medium text-green-600 text-xs mb-1">🔧 Calculadora</div>
+      <% end %>
+      
+      <div class="whitespace-pre-wrap"><%= simple_format(msg.content) %></div>
+      
+      <% if msg.metadata['tool_result'].present? %>
+        <div class="mt-2 text-xs <%= msg.role == 'user' ? 'text-indigo-200' : 'text-gray-500' %>">
+          <%= debug(msg.metadata['tool_result']) %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
